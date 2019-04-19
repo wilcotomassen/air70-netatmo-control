@@ -1,11 +1,13 @@
 #include <dummy.h>
 
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
+#include "netatmoapi.h"
 #include "settings.h"
 
 #define uS_TO_S_FACTOR 1000000
 #define TIME_TO_SLEEP  10
+
+NetatmoApi api(NETATMO_API_USERNAME, NETATMO_API_PASSWORD, NETATMO_API_CLIENT_ID, NETATMO_API_CLIENT_SECRET);
 
 void setup() {
 
@@ -23,44 +25,14 @@ void setup() {
 
   bool wifiConnected = initWiFi(20);
   if (wifiConnected) {
+
+      // Print debug msg
       Serial.print("Connected, IP: ");
       Serial.println(WiFi.localIP());
 
-      WiFiClientSecure client;
-      client.setCACert(ca_cert);
-
-      Serial.println("Connect to server via port 443");
       
-    if (!client.connect(server, 443)){
-        Serial.println("Connection failed!");
-    } else {
-     
-      
-        Serial.println("Connected to server!");
-        /* create HTTP request */
-        client.println("GET api/getstationsdata HTTP/1.0");
-        client.println("Host: api.netatmo.com");
-        client.println("Connection: close");
-        client.println();
 
-        Serial.print("Waiting for response ");
-        while (!client.available()){
-            delay(50); //
-            Serial.print(".");
-        }  
-        /* if data is available then receive and print to Terminal */
-        while (client.available()) {
-            char c = client.read();
-            Serial.write(c);
-        }
-
-        /* if the server disconnected, stop the client */
-        if (!client.connected()) {
-            Serial.println();
-            Serial.println("Server disconnected");
-            client.stop();
-        }
-  }
+      api.fetchToken();
 
   }
 
@@ -69,10 +41,6 @@ void setup() {
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);  
   esp_deep_sleep_start();
 
-}
-
-int getCO2() {
-  return 0;
 }
 
 bool initWiFi(unsigned int tryCount) {
