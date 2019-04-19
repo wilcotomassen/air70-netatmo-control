@@ -3,6 +3,7 @@
 
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
+#include "settings.h"
 
 class NetatmoApi {
 
@@ -39,6 +40,7 @@ class NetatmoApi {
 
       // Do post request
       if (!doPostRequest("/oauth2/token", body)) {
+        
         return false;
       }
 
@@ -51,15 +53,15 @@ class NetatmoApi {
       DynamicJsonDocument doc(512);
       DeserializationError error = deserializeJson(doc, client);
       if (error) {
-        Serial.print(F("deserializeJson() failed: "));
-        Serial.println(error.c_str());
+        DEBUG_PRINT("deserializeJson() failed: ");
+        DEBUG_PRINTLN(error.c_str());
         return false;
       }
 
       // Read token
       this->token = doc["access_token"].as<char*>();
-      Serial.print("Access token: ");
-      Serial.println(token);
+      DEBUG_PRINT("Retrieved access token: ");
+      DEBUG_PRINTLN(token);
 
       client.stop();
 
@@ -73,11 +75,28 @@ class NetatmoApi {
 
     bool doPostRequest(const char* resource, const char* body) {
 
+      DEBUG_PRINTLN("-- Performing post request -- ");
+
       // Connect to server
       if (!client.connect(server, 443)) {
-        Serial.println("Failed to connect to server");
+        DEBUG_PRINT("Failed to connect to server '");
+        DEBUG_PRINT(server);
+        DEBUG_PRINTLN("'");
         return false;
       }
+
+      DEBUG_PRINTLN("-- Post request -- ");
+      DEBUG_PRINT("POST ");
+      DEBUG_PRINT(resource);
+      DEBUG_PRINTLN(" HTTP/1.1");
+      DEBUG_PRINT("Host: ");
+      DEBUG_PRINTLN(server);
+      DEBUG_PRINTLN("Connection: close");
+      DEBUG_PRINT("Content-Length: ");
+      DEBUG_PRINTLN(strlen(body));
+      DEBUG_PRINTLN("Content-Type: application/x-www-form-urlencoded");
+      DEBUG_PRINTLN();
+      DEBUG_PRINTLN(body);
 
       // Send HTTP request
       client.print("POST ");
@@ -102,12 +121,10 @@ class NetatmoApi {
       char status[32] = {0};
       client.readBytesUntil('\r', status, sizeof(status));
       if (strcmp(status, "HTTP/1.1 200 OK") != 0) {
-        Serial.print(F("Unsuccessful response: "));
-        Serial.println(status);
+        DEBUG_PRINT("Unsuccessful response: ");
+        DEBUG_PRINTLN(status);
         return false;
       }
-
-      // Read header until body
 
       return true;
 

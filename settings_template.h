@@ -15,5 +15,19 @@
 
 // General settings
 #define DEBUG_LED 2 // Integrated led is on GPIO2 on Devkit v1
+#define DEBUG 
+
+// Debug printing macro
+#ifdef DEBUG
+ #define DEBUG_PRINT(x)  Serial.print(x)
+#else
+ #define DEBUG_PRINT(x)
+#endif
+
+#ifdef DEBUG
+ #define DEBUG_PRINTLN(x)  Serial.println(x)
+#else
+ #define DEBUG_PRINTLN(x)
+#endif
 
 #endif
