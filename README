@@ -21,3 +21,7 @@ to settings.h and obviously change the settings accordingly.
 * [Brink Air 70 installation manual](https://www.brinkclimatesystems.nl/getattachment/6252a744-9302-462f-8668-f7f24ee7ddbd), with some control options explained
 * [Netatmo Weather API](https://dev.netatmo.com/resources/technical/reference/weather)
 * [Netatmo Auth API](https://dev.netatmo.com/resources/technical/guides/authentication/clientcredentials)
+
+## License
+
+This project is licensed under The Unlicense License - see the [LICENSE](LICENSE) file for details
