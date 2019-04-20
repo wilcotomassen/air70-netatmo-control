@@ -4,18 +4,17 @@
 #include "netatmoapi.h"
 #include "settings.h"
 
-#define uS_TO_S_FACTOR 1000000
-#define TIME_TO_SLEEP  10
-
 NetatmoApi api(NETATMO_API_USERNAME, NETATMO_API_PASSWORD, NETATMO_API_CLIENT_ID, NETATMO_API_CLIENT_SECRET, NETATMO_API_DEVICE_ID);
 
 void setup() {
 
+  // Setup pins
+  pinMode(NOTIFICATION_LED, OUTPUT);
+
 #if DEBUG_ENABLED
 
   // Enable debug led
-  pinMode(DEBUG_LED, OUTPUT);
-  digitalWrite(DEBUG_LED, HIGH);
+  digitalWrite(NOTIFICATION_LED, HIGH);
 
   // Initialize debug serial
   Serial.begin(115200);
@@ -25,21 +24,42 @@ void setup() {
 
   // Connect to wifi
   bool wifiConnected = wifiConnect(3000);
+  bool successfulRead = false;
   
   if (wifiConnected) {
 
     // Fetch CO2
     int co2 = api.readCO2();
 
+    if (co2 != -1) {
+      successfulRead = true;
+    }
+    
+
   }
 
 #if DEBUG_ENABLED
   // Disable debug led
-  digitalWrite(DEBUG_LED, LOW);
+  digitalWrite(NOTIFICATION_LED, LOW);
+  delay(50);
 #endif
 
+  if (successfulRead) {
+    // Blink once for sucessfull read
+    digitalWrite(NOTIFICATION_LED, HIGH);
+    delay(100);
+    digitalWrite(NOTIFICATION_LED, HIGH);
+  } else {
+    // Blink three times shortly for unsucessfull read
+    for (int i = 0; i < 3; i++) {
+      digitalWrite(NOTIFICATION_LED, HIGH);
+      delay(50);
+      digitalWrite(NOTIFICATION_LED, HIGH);
+    }
+  }
+  
   // Enter deep sleep
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  esp_sleep_enable_timer_wakeup(POLL_INTERVAL);
   esp_deep_sleep_start();
 
 }

@@ -14,9 +14,12 @@
 #define NETATMO_API_CLIENT_SECRET "netatmoGeneratedClientSecret"
 #define NETATMO_API_DEVICE_ID "ff:00:00:bb:aa::dd"
 
-// General settings
-#define DEBUG_ENABLED true
-#define DEBUG_LED 2 // Integrated led is on GPIO2 on Devkit v1
+// Pin configuration
+#define NOTIFICATION_LED 2 // Integrated led is on GPIO2 on Devkit v1
+
+// Misc settings
+#define POLL_INTERVAL 10 * 1000000   // Poll interval in uS
+#define DEBUG_ENABLED false
 
 // Debug printing macro
 #if DEBUG_ENABLED
