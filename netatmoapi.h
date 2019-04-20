@@ -8,51 +8,77 @@
 class NetatmoApi {
 
   public:
-    NetatmoApi(const char* api_username, const char* api_password, const char* api_client_id, const char* api_client_secret) {
-      this->api_username = api_username;
-      this->api_password = api_password;
-      this->api_client_id = api_client_id;
-      this->api_client_secret = api_client_secret;
+    NetatmoApi(const char* apiUsername, const char* apiPassword, const char* apiClientId, const char* apiClientSecret, const char* apiDeviceId) {
+      this->apiUsername = apiUsername;
+      this->apiPassword = apiPassword;
+      this->apiClientId = apiClientId;
+      this->apiClientSecret = apiClientSecret;
+      this->apiDeviceId = apiDeviceId;
       client.setCACert(ca_cert);
     }
 
-   int readCO2() {
+    int readCO2() {
 
-    if (!fetchToken()) {
-      return -1;
+      // Fetch token
+      if (!fetchToken()) {
+        return -1;
+      }
+
+      // Do stations data call
+      int resourceLength = 45
+                           + strlen(token)
+                           + strlen(apiDeviceId);
+
+      char resourceString[resourceLength];
+      strcpy(resourceString, "/api/getstationsdata");
+      strcat(resourceString, "?access_token=");
+      strcat(resourceString, token);
+      strcat(resourceString, "&device_id=");
+      strcat(resourceString, apiDeviceId);
+
+      // Do post request
+      if (!doGetRequest(resourceString)) {
+        return false;
+      }
+
+      while (client.available()) {
+        char c = client.read();
+        Serial.write(c);
+      }
+
+      disconnectFromServer();
+
+      return 0;
+
     }
-
-    return 0;
-    
-   }
 
   private:
 
-   bool fetchToken() {
+    bool fetchToken() {
 
       // Determine request body length
       int bodyLength = 84 // Fixed part of body data
-                       + strlen(api_username)
-                       + strlen(api_password)
-                       + strlen(api_client_id)
-                       + strlen(api_client_secret);
+                       + strlen(apiUsername)
+                       + strlen(apiPassword)
+                       + strlen(apiClientId)
+                       + strlen(apiClientSecret);
 
       // Create request body
       char body[bodyLength];
       strcpy(body, "grant_type=password");
       strcat(body, "&username=");
-      strcat(body, api_username);
+      strcat(body, apiUsername);
       strcat(body, "&password=");
-      strcat(body, api_password);
+      strcat(body, apiPassword);
       strcat(body, "&client_id=");
-      strcat(body, api_client_id);
+      strcat(body, apiClientId);
       strcat(body, "&client_secret=");
-      strcat(body, api_client_secret);
+      strcat(body, apiClientSecret);
       strcat(body, "&scope=read_station");
 
       // Do post request
       if (!doPostRequest("/oauth2/token", body)) {
-        
+        disconnectFromServer();
         return false;
       }
 
@@ -67,15 +93,17 @@ class NetatmoApi {
       if (error) {
         DEBUG_PRINT("deserializeJson() failed: ");
         DEBUG_PRINTLN(error.c_str());
+        disconnectFromServer();
         return false;
       }
 
       // Read token
       this->token = doc["access_token"].as<char*>();
+      DEBUG_PRINTLN();
       DEBUG_PRINT("Retrieved access token: ");
       DEBUG_PRINTLN(token);
 
-      client.stop();
+      disconnectFromServer();
 
       return true;
 
@@ -83,53 +111,98 @@ class NetatmoApi {
 
     bool doPostRequest(const char* resource, const char* body) {
 
-      DEBUG_PRINTLN("-- Performing post request -- ");
+      DEBUG_PRINTLN("-- Performing POST request -- ");
 
-      // Connect to server
-      if (!client.connect(server, 443)) {
-        DEBUG_PRINT("Failed to connect to server '");
-        DEBUG_PRINT(server);
-        DEBUG_PRINTLN("'");
+      if (!connectToServer()) {
         return false;
       }
 
+      // Send HTTP request
       DEBUG_PRINTLN("-- Post request -- ");
-      DEBUG_PRINT("POST ");
-      DEBUG_PRINT(resource);
-      DEBUG_PRINTLN(" HTTP/1.1");
-      DEBUG_PRINT("Host: ");
-      DEBUG_PRINTLN(server);
-      DEBUG_PRINTLN("Connection: close");
-      DEBUG_PRINT("Content-Length: ");
-      DEBUG_PRINTLN(strlen(body));
-      DEBUG_PRINTLN("Content-Type: application/x-www-form-urlencoded");
-      DEBUG_PRINTLN();
-      DEBUG_PRINTLN(body);
+      printToClient("POST ");
+      printToClient(resource);
+      printlnToClient(" HTTP/1.1");
+      printToClient("Host: ");
+      printlnToClient(server);
+      printlnToClient("Connection: close");
+      if (strlen(body) > 0) {
+        printToClient("Content-Length: ");
+        char bodyLenBuffer[20];
+        itoa(strlen(body), bodyLenBuffer, 10);
+        printlnToClient(bodyLenBuffer);
+        printlnToClient("Content-Type: application/x-www-form-urlencoded");
+        printlnToClient("");
+        printToClient(body);
+      }
+
+      return waitForHttpResponse();
+
+    }
+
+    bool doGetRequest(const char* resource) {
+
+      DEBUG_PRINTLN("-- Performing GET request -- ");
+
+      if (!connectToServer()) {
+        return false;
+      }
 
       // Send HTTP request
-      client.print("POST ");
-      client.print(resource);
-      client.println(" HTTP/1.1");
-      client.print("Host: ");
-      client.println(server);
-      client.println("Connection: close");
-      client.print("Content-Length: ");
-      client.println(strlen(body));
-      client.println("Content-Type: application/x-www-form-urlencoded");
-      client.println();
-      client.print(body);
+      DEBUG_PRINTLN("-- GET request -- ");
+      printToClient("GET ");
+      printToClient(resource);
+      printlnToClient(" HTTP/1.1");
+      printToClient("Host: ");
+      printlnToClient(server);
+      printlnToClient("");
+
+      return waitForHttpResponse();
+
+    }
+
+    bool connectToServer() {
+
+      // Connect to server
+      if (client.connect(server, 443)) {
+        DEBUG_PRINT("Connected to server: ");
+        DEBUG_PRINTLN(server);
+        return true;
+      } else {
+        DEBUG_PRINT("Failed to connect to server: ");
+        DEBUG_PRINTLN(server);
+        return false;
+      }
+
+    }
+
+    bool disconnectFromServer() {
+      client.flush();
+      client.stop();
+    }
+
+    bool waitForHttpResponse(int timeoutMs = 10000) {
 
       // Wait for HTTP response
-      // @TODO: handle timeout
-      while (!client.available()) {
-        delay(50);
+      unsigned int remainingTime = timeoutMs;
+      unsigned int delayTime = 100;
+      while (!client.available() && remainingTime >= delayTime) {
+        remainingTime -= delayTime;
+        DEBUG_PRINT(".");
+        delay(delayTime);   
+      }
+
+      if (!client.available()) {
+        DEBUG_PRINTLN("Request timed out");
+        return false;
+      } else {
+        DEBUG_PRINTLN("");
       }
 
       // Check for 200 HTTP status code
       char status[32] = {0};
       client.readBytesUntil('\r', status, sizeof(status));
       if (strcmp(status, "HTTP/1.1 200 OK") != 0) {
-        DEBUG_PRINT("Unsuccessful response: ");
+        DEBUG_PRINT("Unsuccessful HTTP response: ");
         DEBUG_PRINTLN(status);
         return false;
       }
@@ -138,12 +211,23 @@ class NetatmoApi {
 
     }
 
+    void printToClient(const char* content) {
+      DEBUG_PRINT(content);
+      client.print(content);
+    }
+
+    void printlnToClient(const char* content) {
+      DEBUG_PRINTLN(content);
+      client.println(content);
+    }
+
     WiFiClientSecure client;
 
-    const char* api_username;
-    const char* api_password;
-    const char* api_client_id;
-    const char* api_client_secret;
+    const char* apiUsername;
+    const char* apiPassword;
+    const char* apiClientId;
+    const char* apiClientSecret;
+    const char* apiDeviceId;
 
     const char* server = "api.netatmo.com";
 

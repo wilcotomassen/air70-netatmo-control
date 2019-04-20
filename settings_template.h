@@ -12,6 +12,7 @@
 #define NETATMO_API_PASSWORD "mySecretPassword"
 #define NETATMO_API_CLIENT_ID "netatmoGeneratedClientID"
 #define NETATMO_API_CLIENT_SECRET "netatmoGeneratedClientSecret"
+#define NETATMO_API_DEVICE_ID "ff:00:00:bb:aa::dd"
 
 // General settings
 #define DEBUG_ENABLED true
