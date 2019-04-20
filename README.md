@@ -3,7 +3,7 @@
 This project uses an [ESP32](https://www.espressif.com/en/products/hardware/esp32/overview) module 
 to read the indoor CO2 levels via an 
 [Netatmo Weather Station](https://www.netatmo.com/en-us/weather/weatherstation) through their API, 
-to control a [Brink Air 70](https://www.brinkclimatesystems.nl/nl-nl/professionals/producten/ventilatie/air-70) 
+to control a [Brink Air 70](https://www.brinkclimatesystems.nl/en-us/international/home/products/decentraal-ventileren/air-70) 
 heat exchanging ventilation unit.
 
 ## Getting started
@@ -18,7 +18,7 @@ to settings.h and obviously change the settings accordingly.
 
 ## Relevant resources
 
-* [Brink Air 70 installation manual](https://www.brinkclimatesystems.nl/getattachment/6252a744-9302-462f-8668-f7f24ee7ddbd), with some control options explained
+* [Brink Air 70 installation manual](https://www.brinkclimatesystems.nl/getattachment/ea5685ab-a123-4766-9812-0aa5513de6b1), with some control options explained
 * [Netatmo Weather API](https://dev.netatmo.com/resources/technical/reference/weather)
 * [Netatmo Auth API](https://dev.netatmo.com/resources/technical/guides/authentication/clientcredentials)
 
