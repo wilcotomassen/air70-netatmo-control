@@ -38,17 +38,36 @@ class NetatmoApi {
 
       // Do post request
       if (!doGetRequest(resourceString)) {
+        disconnectFromServer();
         return false;
       }
 
-      while (client.available()) {
-        char c = client.read();
-        Serial.write(c);
+      // Read until start of JSON
+      while (client.available() && client.peek() != '{') {
+        client.read();
       }
 
+      // Parse JSON object
+      DynamicJsonDocument doc(4096);
+      DeserializationError error = deserializeJson(doc, client);
+      if (error) {
+        DEBUG_PRINT("deserializeJson() failed: ");
+        DEBUG_PRINTLN(error.c_str());
+        disconnectFromServer();
+        return false;
+      }
+
+      // Crude parsing to get the CO2 levels, will only reliably work for 
+      // a station with one indoor sensor unit
+      int co2 = doc["body"]["devices"][0]["dashboard_data"]["CO2"];
+      char co2StrBuffer[20];
+      itoa(co2, co2StrBuffer, 10);
+      DEBUG_PRINT("Fetch CO2 value: ");
+      DEBUG_PRINTLN(co2StrBuffer);
+      
       disconnectFromServer();
 
-      return 0;
+      return co2;
 
     }
 
