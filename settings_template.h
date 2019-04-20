@@ -14,17 +14,17 @@
 #define NETATMO_API_CLIENT_SECRET "netatmoGeneratedClientSecret"
 
 // General settings
+#define DEBUG_ENABLED true
 #define DEBUG_LED 2 // Integrated led is on GPIO2 on Devkit v1
-#define DEBUG 
 
 // Debug printing macro
-#ifdef DEBUG
+#if DEBUG_ENABLED
  #define DEBUG_PRINT(x)  Serial.print(x)
 #else
  #define DEBUG_PRINT(x)
 #endif
 
-#ifdef DEBUG
+#if DEBUG_ENABLED
  #define DEBUG_PRINTLN(x)  Serial.println(x)
 #else
  #define DEBUG_PRINTLN(x)

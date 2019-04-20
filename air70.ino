@@ -11,51 +11,65 @@ NetatmoApi api(NETATMO_API_USERNAME, NETATMO_API_PASSWORD, NETATMO_API_CLIENT_ID
 
 void setup() {
 
+#if DEBUG_ENABLED
+
+  // Enable debug led
+  pinMode(DEBUG_LED, OUTPUT);
   digitalWrite(DEBUG_LED, HIGH);
 
   // Initialize debug serial
   Serial.begin(115200);
   delay(1000);
 
-  // Resume wifi
-  //esp_wifi_start();
+#endif
 
-  // Initialize
-  pinMode(DEBUG_LED, OUTPUT);
-
-  bool wifiConnected = initWiFi(20);
+  // Connect to wifi
+  bool wifiConnected = wifiConnect(3000);
+  
   if (wifiConnected) {
 
-      // Print debug msg
-      Serial.print("Connected, IP: ");
-      Serial.println(WiFi.localIP());
-
-      
-
-      api.fetchToken();
+    // Fetch CO2
+    int co2 = api.readCO2();
 
   }
 
-  // Enter deep sleep
+#if DEBUG_ENABLED
+  // Disable debug led
   digitalWrite(DEBUG_LED, LOW);
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);  
+#endif
+
+  // Enter deep sleep
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   esp_deep_sleep_start();
 
 }
 
-bool initWiFi(unsigned int tryCount) {
-  
+bool wifiConnect(unsigned int timeoutMs) {
+
+  // Connect
+  DEBUG_PRINT("Connecting to WiFi, SSID: ");
+  DEBUG_PRINTLN(WIFI_SSID);
   WiFi.begin(WIFI_SSID, WIFI_PSK);
 
-  // Try to connect
-  unsigned int remainingAttempts = tryCount;
-  while (WiFi.status() != WL_CONNECTED && remainingAttempts > 0) {
-    delay(500);
-    remainingAttempts--;
-  } 
-  
-  return (WiFi.status() == WL_CONNECTED);
-    
+  // Check connection until timeout  
+  unsigned int remainingTime = timeoutMs;
+  unsigned int delayTime = 100;
+  while (WiFi.status() != WL_CONNECTED && remainingTime >= delayTime) {   
+    remainingTime -= delayTime;
+    DEBUG_PRINT(".");
+    delay(delayTime);    
+  }
+  DEBUG_PRINTLN();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    DEBUG_PRINT("Connected to WiFi, got IP: ");
+    DEBUG_PRINTLN(WiFi.localIP());
+    return true;
+  } else {
+    DEBUG_PRINTLN("Failed to connect to WiFi");
+    return false;
+  }
+
 }
 
 void loop() {}

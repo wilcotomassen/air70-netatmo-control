@@ -16,7 +16,19 @@ class NetatmoApi {
       client.setCACert(ca_cert);
     }
 
-    bool fetchToken() {
+   int readCO2() {
+
+    if (!fetchToken()) {
+      return -1;
+    }
+
+    return 0;
+    
+   }
+
+  private:
+
+   bool fetchToken() {
 
       // Determine request body length
       int bodyLength = 84 // Fixed part of body data
@@ -68,10 +80,6 @@ class NetatmoApi {
       return true;
 
     }
-
-    void readCO2() {}
-
-  private:
 
     bool doPostRequest(const char* resource, const char* body) {
 
