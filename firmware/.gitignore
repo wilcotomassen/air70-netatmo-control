@@ -1,0 +1,13 @@
+
+# Visual Micro/Studio files
+*.user
+*.suo
+.vs/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+.builds
+__vm
+
+settings.h
